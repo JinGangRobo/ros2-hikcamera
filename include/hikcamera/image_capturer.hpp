@@ -13,6 +13,12 @@
 
 namespace hikcamera {
 
+enum class SyncMode {
+    NONE,
+
+    SOFTWARE, // use soft trigger and multi thread timer to get image
+};
+
 class ImageCapturer final {
 public:
     struct CameraProfile {
@@ -32,7 +38,8 @@ public:
     };
 
     explicit ImageCapturer(
-        const CameraProfile& profile = CameraProfile{}, const char* user_defined_name = nullptr);
+        const CameraProfile& profile = CameraProfile{}, const char* user_defined_name = nullptr,
+        const SyncMode& sync_mode = SyncMode::NONE);
 
     ImageCapturer(const ImageCapturer&)            = delete;
     ImageCapturer& operator=(const ImageCapturer&) = delete;
@@ -43,6 +50,8 @@ public:
         read(std::chrono::duration<unsigned int, std::milli> timeout = std::chrono::seconds(5));
 
     [[nodiscard]] std::tuple<int, int> get_width_height() const;
+
+    bool software_trigger_on();
 
 private:
     class Impl;

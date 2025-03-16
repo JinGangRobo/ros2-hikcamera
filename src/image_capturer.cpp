@@ -15,12 +15,12 @@ namespace hikcamera {
 
 class ImageCapturer::Impl {
 public:
-    Impl(const CameraProfile& profile, const char* user_defined_name) {
+    Impl(const CameraProfile& profile, const char* user_defined_name, const SyncMode& sync_mode) {
         auto device_info = search_camera(user_defined_name);
         if (!device_info)
             throw std::runtime_error{"Failed to search camera, see log for details."};
 
-        if (!init_camera(*device_info, profile))
+        if (!init_camera(*device_info, profile, sync_mode))
             throw std::runtime_error{"Failed to init camera, see log for details."};
 
         try {
@@ -87,6 +87,15 @@ public:
         MV_CC_FreeImageBuffer(camera_handle_, &stImageInfo);
 
         return img;
+    }
+
+    bool software_trigger_on() {
+        auto ret = MV_CC_SetCommandValue(camera_handle_, "TriggerSoftware");
+        if (MV_OK != ret) {
+            RCLCPP_ERROR(logger_, "Failed To send software trigger nRet [%u]", ret);
+            return false;
+        }
+        return true;
     }
 
 private:
@@ -178,7 +187,8 @@ private:
         }
     }
 
-    bool init_camera(MV_CC_DEVICE_INFO& device_info, const CameraProfile& profile) {
+    bool init_camera(
+        MV_CC_DEVICE_INFO& device_info, const CameraProfile& profile, const SyncMode& sync_mode) {
         auto pDeviceInfo = &device_info;
 
         unsigned int ret;
@@ -229,6 +239,14 @@ private:
 
         ret = MV_CC_StartGrabbing(camera_handle_);
         SDK_RET_ASSERT(ret, "Failed to start grabbing.");
+
+        if (sync_mode == SyncMode::SOFTWARE) {
+            ret = MV_CC_SetEnumValue(camera_handle_, "TriggerMode", MV_TRIGGER_MODE_ON);
+            SDK_RET_ASSERT(ret, "Failed to start TriggerMode. : soft trigger");
+
+            ret = MV_CC_SetEnumValue(camera_handle_, "TriggerSource", MV_TRIGGER_SOURCE_SOFTWARE);
+            SDK_RET_ASSERT(ret, "Failed to set trigger source. : soft trigger");
+        }
 
         destroy_handle.disable();
         close_device.disable();
@@ -311,11 +329,14 @@ private:
     rclcpp::Logger logger_ = rclcpp::get_logger("hikcamera");
 };
 
-ImageCapturer::ImageCapturer(const CameraProfile& profile, const char* user_defined_name) {
-    impl_ = new ImageCapturer::Impl{profile, user_defined_name};
+ImageCapturer::ImageCapturer(
+    const CameraProfile& profile, const char* user_defined_name, const SyncMode& sync_mode) {
+    impl_ = new ImageCapturer::Impl{profile, user_defined_name, sync_mode};
 }
 
 ImageCapturer::~ImageCapturer() { delete impl_; }
+
+bool ImageCapturer::software_trigger_on() { return impl_->software_trigger_on(); }
 
 cv::Mat ImageCapturer::read(std::chrono::duration<unsigned int, std::milli> timeout) {
     return impl_->read(timeout);
