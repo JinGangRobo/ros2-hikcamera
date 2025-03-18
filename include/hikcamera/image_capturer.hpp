@@ -16,7 +16,7 @@ namespace hikcamera {
 enum class SyncMode {
     NONE,
 
-    SOFTWARE, // use soft trigger and multi thread timer to get image
+    SOFTWARE // use soft trigger and multi thread timer to get image
 };
 
 class ImageCapturer final {
@@ -52,6 +52,7 @@ public:
     [[nodiscard]] std::tuple<int, int> get_width_height() const;
 
     bool software_trigger_on();
+    bool set_frame_rate_inner_trigger_mode(float frame_rate);
 
 private:
     class Impl;

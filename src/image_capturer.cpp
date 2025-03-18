@@ -97,6 +97,20 @@ public:
         }
         return true;
     }
+    bool set_frame_rate_inner_trigger_mode(float frame_rate) {
+
+        auto ret = MV_CC_SetBoolValue(camera_handle_, "AcquisitionFrameRateEnable", true);
+        if (MV_OK != ret) {
+            RCLCPP_ERROR(logger_, "Failed To set frame rate control enable nRet [%u]", ret);
+            return false;
+        }
+        ret = MV_CC_SetFloatValue(camera_handle_, "AcquisitionFrameRate", frame_rate);
+        if (MV_OK != ret) {
+            RCLCPP_ERROR(logger_, "Failed To set frame rate nRet [%u]", ret);
+            return false;
+        }
+        return true;
+    }
 
 private:
 #define SDK_RET_ASSERT(ret, message)                          \
@@ -337,6 +351,10 @@ ImageCapturer::ImageCapturer(
 ImageCapturer::~ImageCapturer() { delete impl_; }
 
 bool ImageCapturer::software_trigger_on() { return impl_->software_trigger_on(); }
+
+bool ImageCapturer::set_frame_rate_inner_trigger_mode(float frame_rate) {
+    return impl_->set_frame_rate_inner_trigger_mode(frame_rate);
+}
 
 cv::Mat ImageCapturer::read(std::chrono::duration<unsigned int, std::milli> timeout) {
     return impl_->read(timeout);
