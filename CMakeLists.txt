@@ -1,34 +1,30 @@
 cmake_minimum_required(VERSION 3.22)
-project(hikcamera)
+project(hikcamera VERSION 2.0.0)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
 
-find_package (ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies (REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies(REQUIRED)
 
 find_package(OpenCV 4.5 REQUIRED)
 link_directories(src/sdk/lib)
 
-set(PROJECT_SOURCES
-    src/image_capturer.cpp
-)
+include_directories(include src)
 ament_auto_add_library (
+    ${PROJECT_NAME} SHARED
+    src/capturer.cpp
+)
+target_link_libraries(
     ${PROJECT_NAME}
-    SHARED
-    ${PROJECT_SOURCES}
+    ${OpenCV_LIBS}
+    MvCameraControl
 )
-
-include_directories(
-    include
-    src
-)
-
 install(
     DIRECTORY src/sdk/lib/
     DESTINATION lib
 )
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} MvCameraControl)
-
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+ament_auto_package()
